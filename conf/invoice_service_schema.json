@@ -1,0 +1,257 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+      "title": "InvoiceService API",
+      "description": "APIs for invoice service",  
+      "version": "1.0.0"
+    },
+    "paths": {
+      "/generatePreviewInvoiceImage": {
+        "post": {
+          "description": "Generate a temporary preview invoice image.",
+          "operationId": "generatePreviewInvoiceImage",
+          "parameters": [
+            {
+              "name": "user_id",
+              "in": "query",
+              "description": "Id of user",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "default": "000001"
+              }
+            },
+            {
+              "name": "product_detail",
+              "in": "query",
+              "description": "'name','code','money' for the product",
+              "required": true,
+              "schema": {
+                "type": "array",
+                "items": {
+                    "type": "dict"
+                }
+              },
+              "example": [
+                {"name": "实木茶几","code": "1050201010000000000", "money": 1000},
+                {"name": "餐饮费用", "code": "3070401000000000000", "money": 500}
+              ]
+            },
+            {
+              "name": "buyer_company_name",
+              "in": "query",
+              "description": "The name of buyer company",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "example": "广东唯一网络科技有限公司"
+            },
+            {
+                "name": "buyer_tax_number",
+                "in": "query",
+                "description": "The tax number of buyer company",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                },
+                "example": "91450923MA5L7W2C1W"
+              },
+            {
+              "name": "invoice_type",
+              "in": "query",
+              "description": "The type of invoice",
+              "schema": {
+                "type": "string",
+                "default": "全电普通发票",
+                "enum": ["全电普通发票","全电专用发票"]
+              }
+            },
+            {
+                "name": "remark",
+                "in": "query",
+                "description": "Remarks on the invoice",
+                "schema": {
+                  "type": "string"
+                }
+              }
+          ],
+          
+          "responses": {
+            "200": {
+              "description": "Generate a temporary preview invoice image successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string"
+                      },
+                      "results": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+  
+      "/issueInvoice": {
+        "get": {
+          "description": "Issue invoice file formally",
+          "operationId": "issueInvoice",
+          "parameters": [
+            {
+              "name": "user_id",
+              "in": "query",
+              "description": "Id of user",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "default": "000001"
+              }
+            },
+            {
+              "name": "product_detail",
+              "in": "query",
+              "description": "'name','code','money' for the product",
+              "required": true,
+              "schema": {
+                "type": "array",
+                "items": {
+                    "type": "dict"
+                }
+              },
+              "example": [
+                {"name": "实木茶几","code": "1050201010000000000", "money": 1000},
+                {"name": "餐饮费用", "code": "3070401000000000000", "money": 500}
+              ]
+            },
+            {
+              "name": "buyer_company_name",
+              "in": "query",
+              "description": "The name of buyer company",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "example": "广东唯一网络科技有限公司"
+            },
+            {
+                "name": "buyer_tax_number",
+                "in": "query",
+                "description": "The tax number of buyer company",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                },
+                "example": "91450923MA5L7W2C1W"
+              },
+            {
+              "name": "invoice_type",
+              "in": "query",
+              "description": "The type of invoice",
+              "schema": {
+                "type": "string",
+                "default": "全电普通发票",
+                "enum": ["全电普通发票","全电专用发票"]
+              }
+            },
+            {
+              "name": "remark",
+              "in": "query",
+              "description": "Remarks on the invoice",
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          
+          "responses": {
+            "200": {
+              "description": "Issue invoice file formally successful",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string"
+                      },
+                      "results": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "/sendInvoiceEmail": {
+        "get": {
+          "description": "Issue invoice file formally",
+          "operationId": "sendInvoiceEmail",
+          "parameters": [
+            {
+              "name": "invoice_code",
+              "in": "query",
+              "description": "The invoice code",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "example":["79707992"]
+            },
+            {
+                "name": "invoice_number",
+                "in": "query",
+                "description": "The invoice number",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                },
+                "example": "79707992"
+              },
+            {
+              "name": "email_address",
+              "in": "query",
+              "required": true,
+              "description": "The email address for receiving emails",
+              "schema": {
+                "type": "string"
+              },
+              "example": "111915271@163.com"
+            }
+          ],
+          
+          "responses": {
+            "200": {
+              "description": "Invoce email send successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string"
+                      },
+                      "results": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
