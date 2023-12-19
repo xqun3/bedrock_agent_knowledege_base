@@ -109,8 +109,12 @@ with open(functions_configs["get_product_code"]["product_v47_to_v38_file"],encod
             product_47_to_38_map[code47] = code38
 
 def send_eamil(recipient: str, s3_file_path: str):
+<<<<<<< HEAD
     # for test, we set Sender to recipient 
     SENDER = recipient
+=======
+    SENDER = "xxx@email.com"
+>>>>>>> 482aeb5 (add utils.py)
     RECIPIENT = recipient
 
     AWS_REGION = "us-east-1"
@@ -174,7 +178,7 @@ def send_eamil(recipient: str, s3_file_path: str):
         return {"errcode": "0000", "MessageId": response['MessageId']} 
 
 
-def generatePreviewInvoiceImage(event):
+def generatePreviewInvoiceInfo(event):
     """This function generates a preview invoice image"""
     function_name = "generate_preview_invoice_image"
     print(f"calling method: {function_name}")
@@ -479,8 +483,8 @@ def lambda_handler(event, context):
     
     print ("lambda_handler == > api_path: ",api_path)
     
-    if api_path == '/generatePreviewInvoiceImage':
-        result = generatePreviewInvoiceImage(event)
+    if api_path == '/generatePreviewInvoiceInfo':
+        result = generatePreviewInvoiceInfo(event)
     elif api_path == '/issueInvoice':
         result = issueInvoice(event)
     elif api_path == '/sendInvoiceEmail':

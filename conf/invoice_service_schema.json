@@ -6,10 +6,10 @@
       "version": "1.0.0"
     },
     "paths": {
-      "/generatePreviewInvoiceImage": {
+      "/generatePreviewInvoiceInfo": {
         "post": {
-          "description": "Generate a temporary preview invoice image.",
-          "operationId": "generatePreviewInvoiceImage",
+          "description": "Generate a temporary preview invoice information.",
+          "operationId": "generatePreviewInvoiceInfo",
           "parameters": [
             {
               "name": "user_id",
