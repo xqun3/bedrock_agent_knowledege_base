@@ -109,12 +109,7 @@ with open(functions_configs["get_product_code"]["product_v47_to_v38_file"],encod
             product_47_to_38_map[code47] = code38
 
 def send_eamil(recipient: str, s3_file_path: str):
-<<<<<<< HEAD
-    # for test, we set Sender to recipient 
-    SENDER = recipient
-=======
     SENDER = "xxx@email.com"
->>>>>>> 482aeb5 (add utils.py)
     RECIPIENT = recipient
 
     AWS_REGION = "us-east-1"

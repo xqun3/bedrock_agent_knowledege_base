@@ -1,4 +1,27 @@
 # bedrock_agent_konwledege_base
+
+### Demo 介绍
+模拟开发票业务，业务流程如下所示<br>
+
+收集开票信息 -》 生成发票信息预览 -》确认后正式生成发票 -》 自动发送发票邮件 <br>
+
+
+### 代码结构说明 
+```
+├── README.md
+├── conf
+│   ├── DejaVuSansCondensed.ttf                          # PDF 字体文件
+│   ├── invoice_service_schema.json                      # Lambda API schema
+│   └── product_code_name_map.txt                        # demo 配置文件
+├── invoice_lambda.py                                    # demo 业务代码实现文件，主要lambda function
+├── invoice_lambda_layer.zip                             # demo python 依赖包，lambda layer
+├── notebooks
+│   ├── bedrock_agent_example.ipynb                      # 完整创建 Agent
+│   ├── bedrock_knowledge_base_aos_serveless.ipynb       # 自建 AOS
+│   └── knowledge_base.ipynb                             # 完整创建 knowledge base
+└── requirements.txt
+```
+
 ### Enviroment
 基础环境：python 3.11
 
