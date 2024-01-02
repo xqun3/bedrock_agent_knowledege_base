@@ -1,6 +1,9 @@
 import json
 import logging
 import time
+import pprint
+import io
+import zipfile
 from botocore.exceptions import ClientError
 
 logging.basicConfig(format='[%(asctime)s] p%(process)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s', level=logging.INFO)
@@ -171,7 +174,9 @@ def waitForCollectionCreation(client, collection_name):
     return final_host, collectionarn
 
 
-def create_deployment_package(source_file, destination_file):
+def create_deployment_package(
+        source_file,
+        destination_file):
     """
     Creates a Lambda deployment package in .zip format in an in-memory buffer. This
     buffer can be passed directly to Lambda when creating the function.
@@ -188,7 +193,11 @@ def create_deployment_package(source_file, destination_file):
     return buffer.read()
 
 def create_function(
-          function_name, handler_name, iam_role, deployment_package
+        lambda_client,
+        function_name, 
+        handler_name,
+        iam_role,
+        deployment_package
     ):
     """
     Deploys a Lambda function.
@@ -205,7 +214,7 @@ def create_function(
         response = lambda_client.create_function(
             FunctionName=function_name,
             Description="AWS Lambda demo example",
-            Runtime="python3.10",
+            Runtime="python3.11",
             Role=iam_role.arn,
             Handler=handler_name,
             Code={"ZipFile": deployment_package},
