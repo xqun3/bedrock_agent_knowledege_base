@@ -1,11 +1,9 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
+
 import json
 import time
 import os
 import boto3
-from cryptography.hazmat.primitives import padding
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
 from botocore.exceptions import ClientError
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -15,15 +13,10 @@ from fpdf import FPDF
 s3 = boto3.client('s3')
 bucket = os.environ.get('BUCKET_NAME')  #Name of bucket with data file and OpenAPI file
 product_name_map_file = 'product_code_name_map.txt' #Location of data file in S3
-product_name_map_v38_file = 'product_38_code_name_map.txt'
-product_v47_to_v38_file = "product_47_to_38_map.txt"
+
 font_lib = "DejaVuSansCondensed.ttf"
 local_product_name_map_file = '/tmp/product_code_name_map.txt' #Location of data file in S3
-local_product_name_map_v38_file = '/tmp/product_38_code_name_map.txt'
-local_product_v47_to_v38_file = "/tmp/product_47_to_38_map.txt"
 s3.download_file(bucket, product_name_map_file, local_product_name_map_file)
-s3.download_file(bucket, product_name_map_v38_file, local_product_name_map_v38_file)
-s3.download_file(bucket, product_v47_to_v38_file, local_product_v47_to_v38_file)
 s3.download_file(bucket, font_lib, "/tmp/"+font_lib)
 
 
@@ -68,14 +61,10 @@ user_info = {
 functions_configs = {
     "get_product_code":
         {
-            
             "product_name_map_file": local_product_name_map_file,
-            "product_name_map_v38_file": local_product_name_map_v38_file,
-            "product_v47_to_v38_file": local_product_v47_to_v38_file
         }
 }
 
-# 导入商品名称映射表以及商品税率映射表
 product_name_map = {}
 product_tax_map = {}
 with open(functions_configs["get_product_code"]["product_name_map_file"],encoding="utf-8") as f:
@@ -86,30 +75,9 @@ with open(functions_configs["get_product_code"]["product_name_map_file"],encodin
             product_name_map[code] = name
             product_tax_map[code] = min([float(tax_ins.strip('%')) / 100 for tax_ins in tax.split("、")])
 
-# 映射表内容更新,支持38版编码
-product_name_map_38 = {}
-product_tax_map_38 = {}
-with open(functions_configs["get_product_code"]["product_name_map_v38_file"],encoding="utf-8") as f:
-    for line in f.readlines():
-        line = line.strip()
-        if line:
-            code,name,tax = line.split("\t")
-            product_name_map_38[code] = name
-            product_tax_map_38[code] = min([float(tax_ins.strip('%')) / 100 for tax_ins in tax.split("、")])
-#更新映射表
-product_name_map.update(product_name_map_38)
-product_tax_map.update(product_tax_map_38)
-
-product_47_to_38_map = {}
-with open(functions_configs["get_product_code"]["product_v47_to_v38_file"],encoding="utf-8") as f:
-    for line in f.readlines():
-        line = line.strip()
-        if line:
-            code47,code38 = line.split("\t")
-            product_47_to_38_map[code47] = code38
 
 def send_eamil(recipient: str, s3_file_path: str):
-    SENDER = "xxx@email.com"
+    SENDER = "xxx@amazon.com"
     RECIPIENT = recipient
 
     AWS_REGION = "us-east-1"
@@ -129,7 +97,7 @@ def send_eamil(recipient: str, s3_file_path: str):
     <head></head>
     <body>
     <h1>Hello!</h1>
-    <p>Invoice generate successfully! Please see the attached file for invoice info.</p>
+    <p>Invoice has been generated, please check out attachment.</p>
     </body>
     </html>
     """
@@ -173,12 +141,13 @@ def send_eamil(recipient: str, s3_file_path: str):
         return {"errcode": "0000", "MessageId": response['MessageId']} 
 
 
-def generatePreviewInvoiceInfo(event):
+def generatePreviewInvoiceImage(event):
     """This function generates a preview invoice image"""
     function_name = "generate_preview_invoice_image"
     print(f"calling method: {function_name}")
+    print(f"Event: \n {json.dumps(event)}")
 
-    user_id = get_named_parameter(event, 'user_id') 
+    user_id = get_named_parameter(event, 'user_id')
     product_detail = get_named_parameter(event, 'product_detail')
     buyer_company_name = get_named_parameter(event, 'buyer_company_name')
     buyer_tax_number = get_named_parameter(event, 'buyer_tax_number')
@@ -192,10 +161,23 @@ def generatePreviewInvoiceInfo(event):
     except:
         remark = ""
 
+    if not user_id.isdigit():
+        return {
+                "input_args": {
+                    "product_detail":product_detail,
+                    "buyer_company_name": buyer_company_name,
+                    "buyer_tax_number": buyer_tax_number,
+                    "invoice_type": invoice_type,
+                },
+                "status": "fail",
+                "results": {
+                    "error": "user id contain non-numeric symbols"
+                }
+            }
     print ("parameters ==> ", "user_id:", user_id, "product_detail:", product_detail, "buyer_company_name:", buyer_company_name, "buyer_tax_number:", buyer_tax_number, "invoice_type:", invoice_type, "remark:", remark )
     ## request 设置
 
-    print("---------generate preview invoice---------------------")
+    print("---------generate preview invoide image---------------------")
 
     ## 发票基础信息设置
     # assert user_id in user_info, f"user id <{user_id}>  does not exist."
@@ -367,9 +349,6 @@ def issueInvoice(event):
                 product["money"] = int(product["money"])
             except:
                 product["money"] = float(product["money"])
-        product["code"] = product_47_to_38_map[product["code"]] \
-            if product["code"] in product_47_to_38_map \
-            else product["code"]
         product_total_amount = '{:.2f}'.format(product["money"])  # 每个商品的总金额
         tax_rate = product_tax_map.get(product["code"], None) #税率
         if tax_rate is None:
@@ -478,8 +457,8 @@ def lambda_handler(event, context):
     
     print ("lambda_handler == > api_path: ",api_path)
     
-    if api_path == '/generatePreviewInvoiceInfo':
-        result = generatePreviewInvoiceInfo(event)
+    if api_path == '/generatePreviewInvoiceImage':
+        result = generatePreviewInvoiceImage(event)
     elif api_path == '/issueInvoice':
         result = issueInvoice(event)
     elif api_path == '/sendInvoiceEmail':

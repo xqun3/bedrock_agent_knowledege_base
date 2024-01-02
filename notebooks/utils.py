@@ -169,3 +169,58 @@ def waitForCollectionCreation(client, collection_name):
     collectionarn = (response['collectionDetails'][0]['arn'])
     final_host = host.replace("https://", "")
     return final_host, collectionarn
+
+
+def create_deployment_package(source_file, destination_file):
+    """
+    Creates a Lambda deployment package in .zip format in an in-memory buffer. This
+    buffer can be passed directly to Lambda when creating the function.
+
+    :param source_file: The name of the file that contains the Lambda handler
+                        function.
+    :param destination_file: The name to give the file when it's deployed to Lambda.
+    :return: The deployment package.
+    """
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as zipped:
+        zipped.write(source_file, destination_file)
+    buffer.seek(0)
+    return buffer.read()
+
+def create_function(
+          function_name, handler_name, iam_role, deployment_package
+    ):
+    """
+    Deploys a Lambda function.
+
+    :param function_name: The name of the Lambda function.
+    :param handler_name: The fully qualified name of the handler function. This
+                            must include the file name and the function name.
+    :param iam_role: The IAM role to use for the function.
+    :param deployment_package: The deployment package that contains the function
+                                code in .zip format.
+    :return: The Amazon Resource Name (ARN) of the newly created function.
+    """
+    try:
+        response = lambda_client.create_function(
+            FunctionName=function_name,
+            Description="AWS Lambda demo example",
+            Runtime="python3.10",
+            Role=iam_role.arn,
+            Handler=handler_name,
+            Code={"ZipFile": deployment_package},
+            Publish=True,
+        )
+        function_arn = response["FunctionArn"]
+        waiter = lambda_client.get_waiter("function_active_v2")
+        waiter.wait(FunctionName=function_name)
+        logger.info(
+            "Created function '%s' with ARN: '%s'.",
+            function_name,
+            response["FunctionArn"],
+        )
+    except ClientError:
+        logger.error("Couldn't create function %s.", function_name)
+        raise
+    else:
+        return function_arn
