@@ -12,6 +12,7 @@ from fpdf import FPDF
 
 s3 = boto3.client('s3')
 bucket = os.environ.get('BUCKET_NAME')  #Name of bucket with data file and OpenAPI file
+SENDER = os.environ.get('SENDER') 
 product_name_map_file = 'product_code_name_map.txt' #Location of data file in S3
 
 font_lib = "DejaVuSansCondensed.ttf"
@@ -77,7 +78,7 @@ with open(functions_configs["get_product_code"]["product_name_map_file"],encodin
 
 
 def send_eamil(recipient: str, s3_file_path: str):
-    SENDER = "xxx@amazon.com"
+    sender = SENDER
     RECIPIENT = recipient
 
     AWS_REGION = "us-east-1"
@@ -107,7 +108,7 @@ def send_eamil(recipient: str, s3_file_path: str):
     msg = MIMEMultipart('mixed')
 
     msg['Subject'] = SUBJECT 
-    msg['From'] = SENDER 
+    msg['From'] = sender 
     msg['To'] = RECIPIENT
 
     msg_body = MIMEMultipart('alternative')
@@ -123,7 +124,7 @@ def send_eamil(recipient: str, s3_file_path: str):
     msg.attach(att)
     try:
         response = client.send_raw_email(
-            Source=SENDER,
+            Source=sender,
             Destinations=[
                 RECIPIENT
             ],

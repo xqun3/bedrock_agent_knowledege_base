@@ -13,7 +13,8 @@
 │   ├── DejaVuSansCondensed.ttf                          # PDF 字体文件
 │   ├── invoice_service_schema.json                      # Lambda API schema
 │   └── product_code_name_map.txt                        # demo 配置文件
-├── invoice_lambda.py                                    # demo 业务代码实现文件，主要lambda function
+│   └── piaozone2.faq                                    # 自建检索库，问答源文件
+├── invoice_lambda.py                                    # demo 业务代码实现文件，lambda function
 ├── invoice_lambda_layer.zip                             # demo python 依赖包，lambda layer
 ├── notebooks
 │   ├── bedrock_agent_example.ipynb                      # 完整创建 Agent
@@ -41,11 +42,14 @@ zip -r lambda_layer.zip python
 
 ### 上传 conf 文件到 s3 bucket
 - Console 上传
+- Notebook 上传
 
 ### 开通 AWS SES 服务
+
+如果是使用 console 创建 Agent 需要执行2，3 步，如果是 notebook 创建则不需要做，已经包含在 notebook 的代码块中，顺序执行即可。
 1. verify 邮箱，链接https://us-east-1.console.aws.amazon.com/ses/home?region=us-east-1#/get-set-up
-2. 修改 send_eamil 中的 SENDER 为 verify 之后的邮箱
-3. 注意测试过程中，提供的收件人邮箱最好也使用验证后的邮箱，或者参考 SES 服务进行修改
+2. 增加 lambda 的 Enviroment V
+3. 注意测试过程中，提供的收件人邮箱也需要使用验证后的邮箱，收件人和发件人可以是同一人
 
 
 ### 创建 Agent
@@ -60,5 +64,19 @@ zip -r lambda_layer.zip python
     - 根据 notebook 的顺序一步步执行即可
 
 #### Agent instructions
-You are a friendly invoice assistant. When greeted, use a greeting term and "I'm an invoice assistant" to answer. Through the "InvoiceService" action group, you can offer invoice services. When generating an invoice, first collect all required invoice information from user. Then generate a temporary preview image for the user's reference. If the preview image is successfully generated, return the text_info from the function result to user. Confirm with user if they want to proceed with generating the actual invoice. If user confirms, use tools to generate an invoice. If successful, return the downloadUrl from the function result to user. This allows user to download the invoice. If user indicates the information is incorrect, ask them to provide corrected information. Confirm if the user needs the invoice sent to a designated email address. If so, email the invoice file to the address provided.
+You are a friendly invoice assistant. When greeted, answer user with "I'm an invoice assistant". Through the "InvoiceService" action group, you can offer invoice services. When generating an invoice, first collect all required invoice information from user. Then generate a temporary preview image for the user's reference. If the preview image is successfully generated, return the text_info from the function result to user. Confirm with user if they want to proceed with generating the actual invoice. If the user confirms, use functions to generate an invoice. If successful, return the downloadUrl from the function result to user. This allows user to download the invoice. If user indicates the information is incorrect, ask them to provide corrected information. Confirm if the user needs the invoice sent to a designated email address. If so, email the invoice file to the address provided.
 
+
+### 商品详情测试用例
+因为demo中需要计算税率，所以商品详情需要符合 product_code_name_map.txt 文件中定义的商品名和税号，否则会报错
+
+商品详情测试用例举例：
+例子一：
+```
+小麦，1010101020000000000，9000
+```
+
+例子二：
+```
+稻谷，1010115030500000000，3000
+```
