@@ -5,17 +5,19 @@
 
 收集开票信息 -》 生成发票信息预览 -》确认后正式生成发票 -》 自动发送发票邮件 <br>
 
+### Workshop
+待更新。。。
 
 ### 代码结构说明 
 ```
 ├── README.md
 ├── conf
 │   ├── DejaVuSansCondensed.ttf                          # PDF 字体文件
-│   ├── invoice_service_schema.json                      # Lambda API schema
-│   └── product_code_name_map.txt                        # demo 配置文件
+│   └── product_code_name_map.txt                        # inovice demo 税号税率配置文件
 │   └── piaozone2.faq                                    # 自建检索库，问答源文件
 ├── invoice_lambda.py                                    # demo 业务代码实现文件，lambda function
 ├── invoice_lambda_layer.zip                             # demo python 依赖包，lambda layer
+├── invoice_service_schema.json                          # Lambda API schema
 ├── notebooks
 │   ├── bedrock_agent_example.ipynb                      # 完整创建 Agent
 │   ├── bedrock_knowledge_base_aos_serveless.ipynb       # 自建 AOS
@@ -57,7 +59,8 @@ zip -r lambda_layer.zip python
 1. Console 创建
     - 创建 lambda function: 
         * 添加 invoice_lambda.py 内容到 lambda 代码编辑处
-        * 添加 invoice_lambda_layer.zip 
+        * 添加 invoice_lambda_layer.zip 到 lambda layer
+        * 修改添加 lambda Environment Variables, BUCKET_NAME = "你构建的s3 bucket", SENDER="验证的邮箱"
         * 点击 deploy
     - 创建 Agent，根据 console 的指示，一步步创建关联即可，Agent instruction 可在下面找到
 2. Notebook step by step 创建
