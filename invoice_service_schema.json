@@ -6,10 +6,10 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/generatePreviewInvoiceImage": {
+    "/generatePreviewInvoiceInfo": {
       "post": {
-        "description": "Generate a temporary preview invoice images before formally issue an invoice",
-        "operationId": "generatePreviewInvoiceImage",
+        "description": "Before officially issuing the invoice, generate invoice preview information based on all collected user information and provide it to the user for confirmation of correctness.",
+        "operationId": "generatePreviewInvoiceInfo",
         "parameters": [
           {
             "name": "user_id",
@@ -79,7 +79,7 @@
         
         "responses": {
           "200": {
-            "description": "Generate a temporary preview invoice image successfully",
+            "description": "Generate invoice preview information successfully",
             "content": {
               "application/json": {
                 "schema": {
