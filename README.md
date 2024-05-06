@@ -31,19 +31,19 @@ workshop step by step instructions: https://catalog.us-east-1.prod.workshops.aws
 基础环境：python 3.11
 
 #### python 依赖打包
-本demo代码已经有打包好的lambda_layer文件，直接上传S3即可
+本demo代码已经有打包好的 [lambda_layer](https://github.com/xiaoqunnaws/bedrock_agent_knowledege_base/blob/main/invoice_lambda_layer.zip) 文件，直接上传S3即可
 
 如果有自己需要打包其他依赖，可使用 lambda image 安装依赖库, 上传到 lambda_layer
 
 reference link: https://repost.aws/knowledge-center/lambda-layer-simulated-docker
 
-可以找一台EC2，在EC2的Linux环境打包，命令如下
+找一台EC2，在EC2的Linux环境打包，命令如下
 
 ```
 mkdir layer
 cp requirements.txt layer/requirements.txt
-docker run -ti -v $(pwd)/layer:/app -w /app --entrypoint /bin/bash public.ecr.aws/lambda/python:3.11 -c "pip3 install --taget ./python -r requirements.txt"
-zip -r lambda_layer.zip python
+docker run -ti -v $(pwd)/layer:/app -w /app --entrypoint /bin/bash public.ecr.aws/lambda/python:3.11 -c "pip3 install --target ./python -r requirements.txt"
+cd layer && zip -r lambda_layer.zip python
 ```
 
 ### 上传 conf 文件到 s3 bucket
@@ -65,7 +65,7 @@ zip -r lambda_layer.zip python
     - 创建 lambda function: 
         * 添加 invoice_lambda.py 内容到 lambda 代码编辑处
         * 添加 invoice_lambda_layer.zip 到 lambda layer
-        * 修改添加 lambda Environment Variables, BUCKET_NAME = "你构建的s3 bucket", SENDER="验证的邮箱"， AWS_REGION="服务所在的region，例如 us-east-1"
+        * 修改添加 lambda Environment Variables, BUCKET_NAME = "你构建的s3 bucket", SENDER="验证的邮箱"， REGION="服务所在的region，例如 us-east-1"
         * 点击 deploy
     - 创建 Agent，根据 console 的指示，一步步创建关联即可，Agent instruction 可在下面找到
 
@@ -76,7 +76,7 @@ zip -r lambda_layer.zip python
 You are a friendly invoice assistant. When greeted, answer user with "I'm an invoice assistant". Through the "InvoiceService" action group, you can offer invoice services. 1. Generate invoice preview information 2. Return the preview information to user. 3. Confirm with user if they want to proceed with generating the actual invoice, if user confirms, generate an invoice formally and return the downloadUrl from the function result to user. This allows user to download the invoice. If user indicates the information is incorrect, ask them to provide corrected information and generate preview infomation again. 4. Finally confirm if the user needs the invoice sent to a designated email address, if so, email the invoice file to the address provided.
 
 
-### 商品详情测试用例
+### 商品详情测试用例(新版本代码已经移除了这个限制)
 因为demo中需要计算税率，所以商品详情需要符合 product_code_name_map.txt 文件中定义的商品名和税号，否则会报错
 
 商品详情测试用例举例：

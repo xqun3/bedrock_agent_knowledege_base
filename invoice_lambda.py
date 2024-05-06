@@ -5,6 +5,7 @@ import time
 import os
 import re
 import boto3
+import xmltodict
 from botocore.exceptions import ClientError
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -14,14 +15,13 @@ from fpdf import FPDF
 s3 = boto3.client('s3')
 bucket = os.environ.get('BUCKET_NAME')  #Name of bucket with data file and OpenAPI file
 SENDER = os.environ.get('SENDER') 
-AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
+REGION = os.environ.get("REGION", "us-east-1")
 product_name_map_file = 'product_code_name_map.txt' #Location of data file in S3
 
 font_lib = "DejaVuSansCondensed.ttf"
 # # local_product_name_map_file = '/tmp/product_code_name_map.txt' #Location of data file in S3
 # s3.download_file(bucket, product_name_map_file, local_product_name_map_file)
 s3.download_file(bucket, font_lib, "/tmp/"+font_lib)
-product_detail_patten = re.compile("<item><name>(.*)</name><code>(.*)</code><money>(.*)</money>")
 
 def get_named_parameter(event, name):
     return next(item for item in event['parameters'] if item['name'] == name)['value']
@@ -83,7 +83,6 @@ def send_eamil(recipient: str, s3_file_path: str):
     sender = SENDER
     RECIPIENT = recipient
 
-    # AWS_REGION = "us-east-1"
     SUBJECT = "Invoice Info"
     
     BODY_TEXT = "Hello,\r\nInvoice has been generated, please check out attachment."
@@ -106,7 +105,7 @@ def send_eamil(recipient: str, s3_file_path: str):
     """
 
     CHARSET = "utf-8"
-    client = boto3.client('ses',region_name=AWS_REGION)
+    client = boto3.client('ses',region_name=REGION)
     msg = MIMEMultipart('mixed')
 
     msg['Subject'] = SUBJECT 
@@ -148,12 +147,14 @@ def generatePreviewInvoiceInfo(event):
     """This function generates a preview invoice info"""
     function_name = "generate_preview_invoice_info"
     # print(f"calling method: {function_name}")
-    # print(f"Event: \n {json.dumps(event)}")
+    # print(f"Event: \n {event})
+
 
     # user_id = get_named_parameter(event, 'user_id')
     product_detail = get_named_parameter(event, 'product_detail')
     buyer_company_name = get_named_parameter(event, 'buyer_company_name')
     buyer_tax_number = get_named_parameter(event, 'buyer_tax_number')
+    
     try:
         invoice_type = get_named_parameter(event, 'invoice_type')
     except:
@@ -164,20 +165,7 @@ def generatePreviewInvoiceInfo(event):
     except:
         remark = ""
 
-    # if not user_id.isdigit():
-    #     return {
-    #             "input_args": {
-    #                 "product_detail":product_detail,
-    #                 "buyer_company_name": buyer_company_name,
-    #                 "buyer_tax_number": buyer_tax_number,
-    #                 "invoice_type": invoice_type,
-    #             },
-    #             "status": "fail",
-    #             "results": {
-    #                 "error": "user id contain non-numeric symbols"
-    #             }
-    #         }
-    # print ("parameters ==> ", "user_id:", user_id, "product_detail:", product_detail, "buyer_company_name:", buyer_company_name, "buyer_tax_number:", buyer_tax_number, "invoice_type:", invoice_type, "remark:", remark )
+   
     print ("parameters ==> ", "product_detail:", product_detail, "buyer_company_name:", buyer_company_name, "buyer_tax_number:", buyer_tax_number, "invoice_type:", invoice_type, "remark:", remark )
 
     # ## request 设置
@@ -212,26 +200,33 @@ def generatePreviewInvoiceInfo(event):
     tax_amounts = 0 #总税额
     
     if isinstance(product_detail,str):
-        if "<item><name>" not in product_detail:
-            product_detail = json.loads(product_detail)
+        if "<name>" not in product_detail  and "<item><name>" not in product_detail:
+            try:
+                product_detail = json.loads(product_detail)
+            except:
+                # 某些时候参数提取会存在错误格式，如："[\"{\"name\":\"小麦\",\"code\":\"1010101020000000000\",\"money\":9000}\"]" 
+                product_detail = product_detail.replace('\"', '"')
+                product_detail = product_detail.replace('["{', '[{')
+                product_detail = product_detail.replace('}"]', '}]')
+                product_detail = eval(product_detail)
+        
         else:
-            datas = re.search(product_detail_patten, product_detail)
-            if datas:
-                product_detail = []
-                product = {}
-                product["name"] = datas.group(1)
-                product["code"] = datas.group(2)
-                product["money"] = datas.group(3)
-                product_detail.append(product)
+            # print("xml format parameters!")
+            if "<name>" in product_detail and not product_detail.startswith("<item>"):
+                product_detail = "".join(("<product_detail><item>", product_detail, "</item></product_detail>"))
             else:
+                product_detail = "".join(("<product_detail>", product_detail, "</product_detail>"))
+            try:
+                product_detail = xmltodict.parse(product_detail)["product_detail"]["item"]
+            except:
+                print("Extract product_detail error!",product_detail)
                 new_res["status"] = "fail"
-                new_res["results"] = f"prodect detail: {product_detail} information is not correct."
+                new_res["results"] = f"prodect detail: {product_detail} format is not correct."
                 return new_res
+            if not isinstance(product_detail, list):
+                product_detail = [product_detail]
     print("product_detail",product_detail)
-        # product_detail = product_detail.replace('\"', '"')
-        # product_detail = product_detail.replace('["{', '[{')
-        # product_detail = product_detail.replace('}"]', '}]')
-        # product_detail = eval(product_detail)
+        
 
     # print(f"After process product_detail: {product_detail}")
 
@@ -358,25 +353,28 @@ def issueInvoice(event):
     tax_amounts = 0 #总税额
     
     if "<item><name>" not in product_detail:
-        product_detail = json.loads(product_detail)
+        try:
+            product_detail = json.loads(product_detail)
+        except:
+            product_detail = product_detail.replace('\"', '"')
+            product_detail = product_detail.replace('["{', '[{')
+            product_detail = product_detail.replace('}"]', '}]')
+            product_detail = eval(product_detail)
     else:
-        datas = re.search(product_detail_patten, product_detail)
-        if datas:
-            product_detail = []
-            product = {}
-            product["name"] = datas.group(1)
-            product["code"] = datas.group(2)
-            product["money"] = datas.group(3)
-            product_detail.append(product)
-        else:
-            res["status"] = "fail"
-            res["results"] = f"prodect detail: {product_detail} information is not correct."
-            return res
-        # product_detail = product_detail.replace('\"', '"')
-        # product_detail = product_detail.replace('["{', '[{')
-        # product_detail = product_detail.replace('}"]', '}]')
-        # product_detail = eval(product_detail)
-        
+        if "<name>" in product_detail and not product_detail.startswith("<item>"):
+                product_detail = "".join(("<product_detail><item>", product_detail, "</item></product_detail>"))
+            else:
+                product_detail = "".join(("<product_detail>", product_detail, "</product_detail>"))
+            try:
+                product_detail = xmltodict.parse(product_detail)["product_detail"]["item"]
+            except:
+                print("Extract product_detail error!",product_detail)
+                new_res["status"] = "fail"
+                new_res["results"] = f"prodect detail: {product_detail} format is not correct."
+                return new_res
+            if not isinstance(product_detail, list):
+                product_detail = [product_detail]
+
     # print(f"After process product_detail: {product_detail}")
     
     for product in product_detail:

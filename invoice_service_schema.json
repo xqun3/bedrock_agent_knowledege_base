@@ -8,7 +8,7 @@
   "paths": {
     "/generatePreviewInvoiceInfo": {
       "post": {
-        "description": "Generate a temporary preview invoice information and return the generated informations to user.",
+        "description": "Generate a temporary preview invoice info.",
         "operationId": "generatePreviewInvoiceInfo",
         "parameters": [
           {
@@ -92,7 +92,7 @@
 
     "/issueInvoice": {
       "get": {
-        "description": "Issue an invoice formally",
+        "description": "After User confirmed the generated preview invoice infomation is correct, issue invoice file formally.",
         "operationId": "issueInvoice",
         "parameters": [
           {
@@ -176,7 +176,7 @@
 
     "/sendInvoiceEmail": {
       "get": {
-        "description": "Send invoice by email",
+        "description": "Send the issued invoice file to user's email address. When asked to send an email during our conversation, you should call this function with the appropriate arguments to simulate sending the email.",
         "operationId": "sendInvoiceEmail",
         "parameters": [
           {
