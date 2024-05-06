@@ -3,6 +3,7 @@
 import json
 import time
 import os
+import re
 import boto3
 from botocore.exceptions import ClientError
 from email.mime.multipart import MIMEMultipart
@@ -13,13 +14,14 @@ from fpdf import FPDF
 s3 = boto3.client('s3')
 bucket = os.environ.get('BUCKET_NAME')  #Name of bucket with data file and OpenAPI file
 SENDER = os.environ.get('SENDER') 
+AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
 product_name_map_file = 'product_code_name_map.txt' #Location of data file in S3
 
 font_lib = "DejaVuSansCondensed.ttf"
-local_product_name_map_file = '/tmp/product_code_name_map.txt' #Location of data file in S3
-s3.download_file(bucket, product_name_map_file, local_product_name_map_file)
+# # local_product_name_map_file = '/tmp/product_code_name_map.txt' #Location of data file in S3
+# s3.download_file(bucket, product_name_map_file, local_product_name_map_file)
 s3.download_file(bucket, font_lib, "/tmp/"+font_lib)
-
+product_detail_patten = re.compile("<item><name>(.*)</name><code>(.*)</code><money>(.*)</money>")
 
 def get_named_parameter(event, name):
     return next(item for item in event['parameters'] if item['name'] == name)['value']
@@ -35,7 +37,7 @@ def create_pdf(data):
     pdf.set_font('DejaVu', '', 14)
     # pdf.set_font("Arial", size=12)
     for key, value in data.items():
-        print(key, value)
+        # print(key, value)
         pdf.cell(200, 10, txt=f"{key}: {value}", ln=1, align="C")
     file_path = "/tmp/invoice.pdf"
     pdf.output(file_path)
@@ -59,29 +61,29 @@ user_info = {
 }
 
 ## 函数设置
-functions_configs = {
-    "get_product_code":
-        {
-            "product_name_map_file": local_product_name_map_file,
-        }
-}
+# functions_configs = {
+#     "get_product_code":
+#         {
+#             "product_name_map_file": local_product_name_map_file,
+#         }
+# }
 
 product_name_map = {}
 product_tax_map = {}
-with open(functions_configs["get_product_code"]["product_name_map_file"],encoding="utf-8") as f:
-    for line in f.readlines():
-        line = line.strip()
-        if line:
-            code,name,tax = line.split("\t")
-            product_name_map[code] = name
-            product_tax_map[code] = min([float(tax_ins.strip('%')) / 100 for tax_ins in tax.split("、")])
+# with open(functions_configs["get_product_code"]["product_name_map_file"],encoding="utf-8") as f:
+#     for line in f.readlines():
+#         line = line.strip()
+#         if line:
+#             code,name,tax = line.split("\t")
+#             product_name_map[code] = name
+#             product_tax_map[code] = min([float(tax_ins.strip('%')) / 100 for tax_ins in tax.split("、")])
 
 
 def send_eamil(recipient: str, s3_file_path: str):
     sender = SENDER
     RECIPIENT = recipient
 
-    AWS_REGION = "us-east-1"
+    # AWS_REGION = "us-east-1"
     SUBJECT = "Invoice Info"
     
     BODY_TEXT = "Hello,\r\nInvoice has been generated, please check out attachment."
@@ -137,18 +139,18 @@ def send_eamil(recipient: str, s3_file_path: str):
         print(e.response['Error']['Message'])
         return {"errcode": e.response['Error']['Message']} 
     else:
-        print("Email sent! Message ID:"),
-        print(response['MessageId'])
+        # print("Email sent! Message ID:"),
+        # print(response['MessageId'])
         return {"errcode": "0000", "MessageId": response['MessageId']} 
 
 
 def generatePreviewInvoiceInfo(event):
-    """This function generates a preview invoice image"""
-    function_name = "generate_preview_invoice_image"
-    print(f"calling method: {function_name}")
-    print(f"Event: \n {json.dumps(event)}")
+    """This function generates a preview invoice info"""
+    function_name = "generate_preview_invoice_info"
+    # print(f"calling method: {function_name}")
+    # print(f"Event: \n {json.dumps(event)}")
 
-    user_id = get_named_parameter(event, 'user_id')
+    # user_id = get_named_parameter(event, 'user_id')
     product_detail = get_named_parameter(event, 'product_detail')
     buyer_company_name = get_named_parameter(event, 'buyer_company_name')
     buyer_tax_number = get_named_parameter(event, 'buyer_tax_number')
@@ -162,23 +164,25 @@ def generatePreviewInvoiceInfo(event):
     except:
         remark = ""
 
-    if not user_id.isdigit():
-        return {
-                "input_args": {
-                    "product_detail":product_detail,
-                    "buyer_company_name": buyer_company_name,
-                    "buyer_tax_number": buyer_tax_number,
-                    "invoice_type": invoice_type,
-                },
-                "status": "fail",
-                "results": {
-                    "error": "user id contain non-numeric symbols"
-                }
-            }
-    print ("parameters ==> ", "user_id:", user_id, "product_detail:", product_detail, "buyer_company_name:", buyer_company_name, "buyer_tax_number:", buyer_tax_number, "invoice_type:", invoice_type, "remark:", remark )
-    ## request 设置
+    # if not user_id.isdigit():
+    #     return {
+    #             "input_args": {
+    #                 "product_detail":product_detail,
+    #                 "buyer_company_name": buyer_company_name,
+    #                 "buyer_tax_number": buyer_tax_number,
+    #                 "invoice_type": invoice_type,
+    #             },
+    #             "status": "fail",
+    #             "results": {
+    #                 "error": "user id contain non-numeric symbols"
+    #             }
+    #         }
+    # print ("parameters ==> ", "user_id:", user_id, "product_detail:", product_detail, "buyer_company_name:", buyer_company_name, "buyer_tax_number:", buyer_tax_number, "invoice_type:", invoice_type, "remark:", remark )
+    print ("parameters ==> ", "product_detail:", product_detail, "buyer_company_name:", buyer_company_name, "buyer_tax_number:", buyer_tax_number, "invoice_type:", invoice_type, "remark:", remark )
 
-    print("---------generate preview invoide image---------------------")
+    # ## request 设置
+
+    # print("---------generate preview invoide image---------------------")
 
     ## 发票基础信息设置
     # assert user_id in user_info, f"user id <{user_id}>  does not exist."
@@ -208,12 +212,28 @@ def generatePreviewInvoiceInfo(event):
     tax_amounts = 0 #总税额
     
     if isinstance(product_detail,str):
-        product_detail = product_detail.replace('\"', '"')
-        product_detail = product_detail.replace('["{', '[{')
-        product_detail = product_detail.replace('}"]', '}]')
-        product_detail = eval(product_detail)
+        if "<item><name>" not in product_detail:
+            product_detail = json.loads(product_detail)
+        else:
+            datas = re.search(product_detail_patten, product_detail)
+            if datas:
+                product_detail = []
+                product = {}
+                product["name"] = datas.group(1)
+                product["code"] = datas.group(2)
+                product["money"] = datas.group(3)
+                product_detail.append(product)
+            else:
+                new_res["status"] = "fail"
+                new_res["results"] = f"prodect detail: {product_detail} information is not correct."
+                return new_res
+    print("product_detail",product_detail)
+        # product_detail = product_detail.replace('\"', '"')
+        # product_detail = product_detail.replace('["{', '[{')
+        # product_detail = product_detail.replace('}"]', '}]')
+        # product_detail = eval(product_detail)
 
-    print(f"After process product_detail: {product_detail}")
+    # print(f"After process product_detail: {product_detail}")
 
     for product in product_detail:
         if isinstance(product["money"],str):
@@ -222,8 +242,10 @@ def generatePreviewInvoiceInfo(event):
                 product["money"] = int(product["money"])
             except:
                 product["money"] = float(product["money"])
+        
         product_total_amount = '{:.2f}'.format(product["money"])  # 每个商品的总金额
-        tax_rate = product_tax_map.get(product["code"], None) #税率
+        # tax_rate = product_tax_map.get(product["code"], None) #税率
+        tax_rate = 0.09 #税率
         if tax_rate is None:
             new_res["status"] = "fail"
             new_res["results"] = f"您提供的商品<{product['name']}>的税收编码<{product['code']}>是错误的，请进行修改."
@@ -274,18 +296,17 @@ def generatePreviewInvoiceInfo(event):
                     "text_info": data
                 }
             }
-
     return result
 
 
 def issueInvoice(event):
     """This function is used to issue invoices"""
     ## request参数 设置
-    print("------------issue_invoice----------------")
+    # print("------------issue_invoice----------------")
     function_name = "issue_invoice"
-    print(f"calling method: {function_name}")
+    # print(f"calling method: {function_name}")
 
-    user_id = get_named_parameter(event, 'user_id') 
+    # user_id = get_named_parameter(event, 'user_id') 
     product_detail = get_named_parameter(event, 'product_detail')
     buyer_company_name = get_named_parameter(event, 'buyer_company_name')
     buyer_tax_number = get_named_parameter(event, 'buyer_tax_number')
@@ -300,8 +321,9 @@ def issueInvoice(event):
     except:
         remark = ""
     
-    print ("parameters ==> ", "user_id:", user_id, "product_detail:", product_detail, "buyer_company_name:", buyer_company_name, "buyer_tax_number:", buyer_tax_number, "invoice_type:", invoice_type, "remark:", remark )
+    # print ("parameters ==> ", "user_id:", user_id, "product_detail:", product_detail, "buyer_company_name:", buyer_company_name, "buyer_tax_number:", buyer_tax_number, "invoice_type:", invoice_type, "remark:", remark )
 
+    print ("parameters ==> ", "product_detail:", product_detail, "buyer_company_name:", buyer_company_name, "buyer_tax_number:", buyer_tax_number, "invoice_type:", invoice_type, "remark:", remark )
 
     ## 发票基础信息设置
     reviewer = user_info.get("reviewer", "")
@@ -335,13 +357,27 @@ def issueInvoice(event):
     invoice_amounts = 0 #不计税的总金额
     tax_amounts = 0 #总税额
     
-    if isinstance(product_detail,str):
-        product_detail = product_detail.replace('\"', '"')
-        product_detail = product_detail.replace('["{', '[{')
-        product_detail = product_detail.replace('}"]', '}]')
-        product_detail = eval(product_detail)
+    if "<item><name>" not in product_detail:
+        product_detail = json.loads(product_detail)
+    else:
+        datas = re.search(product_detail_patten, product_detail)
+        if datas:
+            product_detail = []
+            product = {}
+            product["name"] = datas.group(1)
+            product["code"] = datas.group(2)
+            product["money"] = datas.group(3)
+            product_detail.append(product)
+        else:
+            res["status"] = "fail"
+            res["results"] = f"prodect detail: {product_detail} information is not correct."
+            return res
+        # product_detail = product_detail.replace('\"', '"')
+        # product_detail = product_detail.replace('["{', '[{')
+        # product_detail = product_detail.replace('}"]', '}]')
+        # product_detail = eval(product_detail)
         
-    print(f"After process product_detail: {product_detail}")
+    # print(f"After process product_detail: {product_detail}")
     
     for product in product_detail:
         if isinstance(product["money"], str):
@@ -351,7 +387,8 @@ def issueInvoice(event):
             except:
                 product["money"] = float(product["money"])
         product_total_amount = '{:.2f}'.format(product["money"])  # 每个商品的总金额
-        tax_rate = product_tax_map.get(product["code"], None) #税率
+        # tax_rate = product_tax_map.get(product["code"], None) #税率
+        tax_rate = 0.09 #税率
         if tax_rate is None:
             res["status"] = "fail"
             res["results"] = f"您提供的商品<{product['name']}>的税收编码<{product['code']}>是错误的，请进行修改."
@@ -420,10 +457,10 @@ def issueInvoice(event):
 def sendInvoiceEmail(event):
     """This function send the issued invoice file link to a specified email address"""
     ## request参数 设置
-    print("------------send email----------------")
+    # print("------------send email----------------")
     function_name = "send_invoice_email"
-    print(f"calling method: {function_name}")
-    print(f"Event: \n {json.dumps(event)}")
+    # print(f"calling method: {function_name}")
+    # print(f"Event: \n {json.dumps(event)}")
 
     invoice_code = get_named_parameter(event, 'invoice_code') 
     invoice_number = get_named_parameter(event, 'invoice_number')
@@ -445,7 +482,7 @@ def sendInvoiceEmail(event):
     else:
         res["status"] = "fail"
         res["results"] = f"{result['errcode']}\n邮件发送失败,请稍后尝试重新发送."
-    print(res)
+    # print(res)
     return res
 
 
@@ -456,7 +493,7 @@ def lambda_handler(event, context):
     action_group = event['actionGroup']
     api_path = event['apiPath']
     
-    print ("lambda_handler == > api_path: ",api_path)
+    # print ("lambda_handler == > api_path: ",api_path)
     
     if api_path == '/generatePreviewInvoiceInfo':
         result = generatePreviewInvoiceInfo(event)
@@ -477,7 +514,7 @@ def lambda_handler(event, context):
     session_attributes = event['sessionAttributes']
     prompt_session_attributes = event['promptSessionAttributes']
     
-    print ("Event:", event)
+    # print ("Event:", event)
     action_response = {
         'actionGroup': event['actionGroup'],
         'apiPath': event['apiPath'],

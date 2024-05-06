@@ -8,19 +8,9 @@
   "paths": {
     "/generatePreviewInvoiceInfo": {
       "post": {
-        "description": "Before officially issuing the invoice, generate invoice preview information based on all collected user information and provide it to the user for confirmation of correctness.",
+        "description": "Generate a temporary preview invoice information and return the generated informations to user.",
         "operationId": "generatePreviewInvoiceInfo",
         "parameters": [
-          {
-            "name": "user_id",
-            "in": "query",
-            "description": "Id of user",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "default": "000001"
-            }
-          },
           {
             "name": "product_detail",
             "in": "query",
@@ -105,16 +95,6 @@
         "description": "Issue an invoice formally",
         "operationId": "issueInvoice",
         "parameters": [
-          {
-            "name": "user_id",
-            "in": "query",
-            "description": "Id of user",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "default": "000001"
-            }
-          },
           {
             "name": "product_detail",
             "in": "query",
